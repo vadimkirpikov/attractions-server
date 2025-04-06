@@ -6,5 +6,7 @@ public class UserRoute
     public required string Name { get; set; }
     
     public ICollection<RoutePlace>? RoutePlaces { get; set; }
+    
+    public Guid UserId { get; set; }
     public User? User { get; set; }
 }

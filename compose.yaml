@@ -7,16 +7,15 @@ services:
     ports:
       - 8080:8080
     depends_on:
-       db:
-         condition: service_healthy
+       - db
   db:
     image: postgres:latest
     container_name: database
     restart: always
-    user: postgres
     volumes:
       - ./db-data:/var/lib/postgresql/data
     environment:
+      - POSTGRES_USER=vk
       - POSTGRES_DB=db
       - POSTGRES_PASSWORD=123
     expose:
