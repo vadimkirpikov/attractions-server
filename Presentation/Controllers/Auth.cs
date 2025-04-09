@@ -35,6 +35,8 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
             issuer: jwt.Value.Issuer,
             audience: jwt.Value.Audience,
             claims: claims,
+            notBefore: DateTime.Now,
+            expires: DateTime.Now.AddMinutes(30),
             signingCredentials: creds
         );
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -53,8 +55,15 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
         {
             return NotFound();
         }
-        
+
+        var refreshToken = user.RefreshToken;
         var token = GenerateToken(user);
+        Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions ()
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict
+        });
         return Ok(new { Token = token });
     }
 
@@ -67,16 +76,36 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
             return BadRequest("This email is already registered");
         }
 
+        var refreshToken = Guid.NewGuid().ToString();
         var user = new User
         {
             Email = registerDto.Email!,
             Name = registerDto.Name!,
             Id = Guid.NewGuid(),
             Role = "User",
-            HashPassword = _hasher.HashPassword(null!, registerDto.Password!)
+            HashPassword = _hasher.HashPassword(null!, registerDto.Password!),
+            RefreshToken = refreshToken
         };
         await context.Users.AddAsync(user);
         await context.SaveChangesAsync();
-        return Ok(new { Token = GenerateToken(user) });
+        return Ok(new { Token = GenerateToken(user), RefreshToken = refreshToken });
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshAccessToken()
+    {
+        if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken))
+        {
+            return Unauthorized();
+        }
+        var user = await context.Users.SingleOrDefaultAsync(u => u.RefreshToken == refreshToken);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+        
+        var newAccessToken = GenerateToken(user);
+        
+        return Ok(new {Token = newAccessToken});
     }
 }

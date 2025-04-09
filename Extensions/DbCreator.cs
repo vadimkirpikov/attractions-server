@@ -14,6 +14,7 @@ public static class DbCreator
         {
             try
             {
+                database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
                 created = true;
             }

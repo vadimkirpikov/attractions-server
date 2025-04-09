@@ -24,16 +24,26 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
         return Ok(routes);
     }
 
-    [HttpGet("fullInfo")]
-    public async Task<IActionResult> GetFullInfoOfUserRoutes()
+    [HttpGet("fullInfo/{id:guid}")]
+    public async Task<IActionResult> GetFullInfoOfUserRoute([FromRoute] Guid id)
     {
         var userId = Guid.Parse(ClaimTypes.NameIdentifier);
-        var routes = await context.Routes
-            .Where(r => r.UserId == userId)
+        var route = await context.Routes.SingleOrDefaultAsync(r => r.Id == id);
+        if (route == null)
+        {
+            return NotFound($"Rote with id {id} not found");
+        }
+
+        if (route.UserId != userId)
+        {
+            return NotFound($"User with id {userId} is not owner of the route with id {id}");
+        }
+        var routeFull = await context.Routes
+            .Where(r => r.Id == route.Id)
             .Include(r => r.RoutePlaces!)
             .ThenInclude(rp => rp.Place)
-            .ToListAsync();
-        return Ok(routes);
+            .SingleOrDefaultAsync();
+        return Ok(routeFull);
     }
 
     [HttpPost]

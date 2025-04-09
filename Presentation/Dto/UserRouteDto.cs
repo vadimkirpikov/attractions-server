@@ -9,6 +9,5 @@ public class UserRouteDto
 public class RoutePlaceDto
 {
     public long PlacePosition { get; set; }
-    public Guid UserRouteId { get; set; }
     public Guid PlaceId { get; set; }
 }
