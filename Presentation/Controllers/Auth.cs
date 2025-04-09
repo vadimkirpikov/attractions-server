@@ -14,9 +14,9 @@ namespace TouristServer.Presentation.Controllers;
 
 [ApiController]
 [Route("v1/auth")]
-public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> jwt) : ControllerBase
+public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> jwt, ILogger<AuthController> logger) : ControllerBase
 {
-    private readonly PasswordHasher<object> _hasher = new();
+    private readonly PasswordHasher<User> _hasher = new();
 
     private string GenerateToken(User user)
     {
@@ -43,17 +43,21 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
     }
     
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+    public async Task<ActionResult<TokenDto>> Login([FromBody] LoginDto loginDto)
     {
-        var user = await context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
+        var user = await context.Users.SingleOrDefaultAsync(u => u.Email.Equals(loginDto.Email));
+        logger.LogInformation(user?.Email);
         if (user == null)
         {
+            logger.LogInformation("Login");
             return NotFound();
         }
-        if (_hasher.VerifyHashedPassword(user, user.HashPassword, loginDto.Password!) 
-            != PasswordVerificationResult.Success)
+
+        var hashedPassword = _hasher.HashPassword(user, loginDto.Password!);
+        if (user.HashPassword.Equals(hashedPassword))
         {
-            return NotFound();
+            logger.LogInformation("Password");
+            return NotFound("Invalid password");
         }
 
         var refreshToken = user.RefreshToken;
@@ -64,7 +68,7 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
             Secure = true,
             SameSite = SameSiteMode.Strict
         });
-        return Ok(new { Token = token });
+        return Ok(new TokenDto {Token = token});
     }
 
     [HttpPost("register")]
@@ -88,11 +92,11 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
         };
         await context.Users.AddAsync(user);
         await context.SaveChangesAsync();
-        return Ok(new { Token = GenerateToken(user), RefreshToken = refreshToken });
+        return Ok();
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshAccessToken()
+    public async Task<ActionResult<TokenDto>> RefreshAccessToken()
     {
         if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken))
         {
@@ -106,6 +110,6 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
         
         var newAccessToken = GenerateToken(user);
         
-        return Ok(new {Token = newAccessToken});
+        return Ok(new TokenDto {Token = newAccessToken});
     }
 }

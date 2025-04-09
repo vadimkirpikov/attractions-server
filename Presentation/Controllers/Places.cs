@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TouristServer.DAL;
+using TouristServer.DAL.Dbo;
 using TouristServer.Presentation.Dto;
 
 namespace TouristServer.Presentation.Controllers;
@@ -12,7 +13,7 @@ namespace TouristServer.Presentation.Controllers;
 public class PlacesController(ApplicationDbContext context) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> GetFilteredPlaces([FromBody] FilterDto? filter, [FromQuery] int? page, [FromQuery] int? pageSize)
+    public async Task<ActionResult<IEnumerable<Place>>> GetFilteredPlaces([FromBody] FilterDto? filter, [FromQuery] int? page, [FromQuery] int? pageSize)
     {
         
         var query = context.Places.AsQueryable();
@@ -45,18 +46,16 @@ public class PlacesController(ApplicationDbContext context) : ControllerBase
         return Ok(await query.ToListAsync());
     }
     
-    [HttpGet("photosOfPlace/{placeId:guid}")]
-    public async Task<IActionResult> GetPhotosOfPlace(
-        [FromRoute] Guid placeId,
-        [FromQuery] int? page,
-        [FromQuery] int? pageSize)
+    [HttpGet("{placeId:guid}")]
+    public async Task<ActionResult<Place>> GetPlace(
+        [FromRoute] Guid placeId )
     {
-        var query = context.Photos.Where(p => p.PlaceId == placeId).AsQueryable();
-        if (page != null && pageSize != null)
-        {
-            query = query.Skip((page.Value - 1) * pageSize.Value).Take(pageSize.Value);
-        }
-        return Ok(await query.ToListAsync());
+        var place = await context.Places.Where(p => p.Id == placeId)
+            .Include(p => p.Photos)
+            .Include(p => p.District)
+            .Include(p => p.Category).SingleOrDefaultAsync();
+        if (place == null) return NotFound();
+        return Ok(place);
     }
     
 }

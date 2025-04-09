@@ -23,20 +23,20 @@ public class OthersController(ApplicationDbContext context) : ControllerBase
     }
 
     [HttpGet("districts")]
-    public async Task<IActionResult> GetDistricts([FromQuery] int? page, [FromQuery] int? pageSize)
+    public async Task<ActionResult<IEnumerable<District>>> GetDistricts([FromQuery] int? page, [FromQuery] int? pageSize)
     {
         return Ok(await GetSubjects<District>(page, pageSize));
     }
     
     [HttpGet("categories")]
-    public async Task<IActionResult> GetCategories([FromQuery] int? page, [FromQuery] int? pageSize)
+    public async Task<ActionResult<IEnumerable<Category>>> GetCategories([FromQuery] int? page, [FromQuery] int? pageSize)
     {
         return Ok(await GetSubjects<Category>(page, pageSize));
     }
 
     [HttpGet("users")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetUsers([FromQuery] int? page, [FromQuery] int? pageSize)
+    public async Task<ActionResult<IEnumerable<User>>> GetUsers([FromQuery] int? page, [FromQuery] int? pageSize)
     {
         return Ok(await GetSubjects<User>(page, pageSize));
     }

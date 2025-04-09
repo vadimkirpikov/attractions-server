@@ -4,6 +4,7 @@ public class Place
 {
     public Guid Id { get; set; }
     public Guid CategoryId { get; set; }
+    public Category? Category { get; set; }
     public long Cost { get; set; }
     public required double Latitude { get; set; }
     public required double Longitude { get; set; }

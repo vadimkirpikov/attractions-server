@@ -15,7 +15,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
 {
     
     [HttpGet("simpleInfo")]
-    public async Task<IActionResult> GetRoutesOfUser()
+    public async Task<ActionResult<IEnumerable<UserRoute>>> GetRoutesOfUser()
     {
         var userId = Guid.Parse(ClaimTypes.NameIdentifier);
         var routes = await context.Routes
@@ -25,7 +25,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
     }
 
     [HttpGet("fullInfo/{id:guid}")]
-    public async Task<IActionResult> GetFullInfoOfUserRoute([FromRoute] Guid id)
+    public async Task<ActionResult<UserRoute>> GetFullInfoOfUserRoute([FromRoute] Guid id)
     {
         var userId = Guid.Parse(ClaimTypes.NameIdentifier);
         var route = await context.Routes.SingleOrDefaultAsync(r => r.Id == id);
