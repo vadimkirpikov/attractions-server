@@ -45,9 +45,10 @@ builder.Services.AddCustomAuthentication(jwtSettings).AddCors(options =>
 {
     options.AddDefaultPolicy(b =>
     {
-        b.AllowAnyOrigin()
+        b.WithOrigins("http://localhost:5173")
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 }).AddValidatorsFromAssemblyContaining(typeof(FilterDtoValidator))
     .AddValidatorsFromAssemblyContaining(typeof(UserRouteValidator))

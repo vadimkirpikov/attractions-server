@@ -20,6 +20,11 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
 
     private string GenerateToken(User user)
     {
+        logger.LogInformation("Generating token");
+        logger.LogInformation(user.Email);
+        logger.LogInformation(user.Role);
+        logger.LogInformation(user.Name);
+        logger.LogInformation(user.Id.ToString());
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -39,7 +44,10 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
             expires: DateTime.Now.AddMinutes(30),
             signingCredentials: creds
         );
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        logger.LogInformation("Token generated");
+        var stringToken = new JwtSecurityTokenHandler().WriteToken(token);
+        logger.LogInformation(stringToken);
+        return stringToken;
     }
     
     [HttpPost("login")]
@@ -61,12 +69,12 @@ public class AuthController(ApplicationDbContext context, IOptions<JwtSettings> 
         }
 
         var refreshToken = user.RefreshToken;
+        logger.LogInformation(refreshToken);
         var token = GenerateToken(user);
         Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions ()
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict
+            Secure = false
         });
         return Ok(new TokenDto {Token = token});
     }

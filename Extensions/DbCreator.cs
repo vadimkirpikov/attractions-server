@@ -8,13 +8,13 @@ public static class DbCreator
     {
         using var scope = webApplication.Services.CreateScope();
         var services = scope.ServiceProvider;
-        var database= services.GetRequiredService<ApplicationDbContext>();
+        var database = services.GetRequiredService<ApplicationDbContext>();
         var created = false;
         while (!created)
         {
             try
             {
-                // database.Database.EnsureDeleted();
+                //database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
                 created = true;
             }

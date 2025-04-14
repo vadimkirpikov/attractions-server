@@ -11,13 +11,13 @@ namespace TouristServer.Presentation.Controllers;
 [ApiController]
 [Authorize]
 [Route("v1/routes")]
-public class UserRoutesController(ApplicationDbContext context) : Controller
+public class UserRoutesController(ApplicationDbContext context, ILogger<UserRoutesController> logger) : Controller
 {
     
     [HttpGet("simpleInfo")]
     public async Task<ActionResult<IEnumerable<UserRoute>>> GetRoutesOfUser()
     {
-        var userId = Guid.Parse(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var routes = await context.Routes
             .Where(r => r.UserId == userId)
             .ToListAsync();
@@ -27,7 +27,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
     [HttpGet("fullInfo/{id:guid}")]
     public async Task<ActionResult<UserRoute>> GetFullInfoOfUserRoute([FromRoute] Guid id)
     {
-        var userId = Guid.Parse(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var route = await context.Routes.SingleOrDefaultAsync(r => r.Id == id);
         if (route == null)
         {
@@ -49,7 +49,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
     [HttpPost]
     public async Task<IActionResult> CreateUserRoute([FromBody] UserRouteDto userRouteDto)
     {
-        var userId = Guid.Parse(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var userRoute = new UserRoute()
         {
             Id = Guid.NewGuid(),
@@ -57,7 +57,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
             Name = userRouteDto.Name!,
             RoutePlaces = []
         };
-        var routePlaceList = userRouteDto.RoutePlaces!.Select(routePlaceDto => new RoutePlace()
+        var routePlaceList = userRouteDto.RoutePlaces?.Select(routePlaceDto => new RoutePlace()
             {
                 Id = Guid.NewGuid(), PlacePosition = routePlaceDto.PlacePosition, UserRouteId = userRoute.Id, PlaceId = routePlaceDto.PlaceId,
             })
@@ -67,7 +67,11 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
         {
             await context.Routes.AddAsync(userRoute);
             await context.SaveChangesAsync();
-            await context.RoutePlaces.AddRangeAsync(routePlaceList);
+            if (routePlaceList != null)
+            {
+                await context.RoutePlaces.AddRangeAsync(routePlaceList);
+
+            }
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
             return Created();
@@ -87,7 +91,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
         {
             return NotFound($"Route with id {id} not found");
         }
-        var userId = Guid.Parse(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         if (existingUserRoute.UserId != userId)
         {
             return NotFound($"User with id {userId} is not owner of the route with id {id}");
@@ -132,7 +136,7 @@ public class UserRoutesController(ApplicationDbContext context) : Controller
         {
             return NotFound($"Route with id {id} not found");
         }
-        var userId = Guid.Parse(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         if (existingUserRoute.UserId != userId)
         {
             return NotFound($"User with id {userId} is not owner of the route with id {id}");
