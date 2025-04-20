@@ -17,12 +17,12 @@ public class PlacesController(ApplicationDbContext context) : ControllerBase
     {
         
         var query = context.Places.AsQueryable();
-        if (filter?.CategoryIds is { Count: 0 })
+        if (filter?.CategoryIds != null && filter.CategoryIds.Count != 0)
         {
             query = query.Where(p => filter.CategoryIds.Contains(p.CategoryId));
         }
 
-        if (filter?.DistrictIds is { Count: 0 })
+        if (filter?.DistrictIds != null && filter.DistrictIds.Count != 0)
         {
             query = query.Where(p => filter.DistrictIds.Contains(p.DistrictId));
         }
