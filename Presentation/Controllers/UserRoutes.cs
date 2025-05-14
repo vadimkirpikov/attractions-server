@@ -13,7 +13,6 @@ namespace TouristServer.Presentation.Controllers;
 [Route("v1/routes")]
 public class UserRoutesController(ApplicationDbContext context, ILogger<UserRoutesController> logger) : Controller
 {
-    
     [HttpGet("simpleInfo")]
     public async Task<ActionResult<IEnumerable<UserRoute>>> GetRoutesOfUser()
     {
@@ -25,7 +24,7 @@ public class UserRoutesController(ApplicationDbContext context, ILogger<UserRout
     }
 
     [HttpGet("fullInfo/{id:guid}")]
-    public async Task<ActionResult<UserRoute>> GetFullInfoOfUserRoute([FromRoute] Guid id)
+    public async Task<ActionResult<UserRouteDto>> GetFullInfoOfUserRoute([FromRoute] Guid id)
     {
         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var route = await context.Routes.SingleOrDefaultAsync(r => r.Id == id);
@@ -43,11 +42,25 @@ public class UserRoutesController(ApplicationDbContext context, ILogger<UserRout
             .Include(r => r.RoutePlaces!)
             .ThenInclude(rp => rp.Place)
             .SingleOrDefaultAsync();
-        return Ok(routeFull);
+
+        var userRouteDto = new UserRouteDto
+        {
+            Name = routeFull!.Name,
+            RoutePlaces = routeFull.RoutePlaces!.Select(rp => new RoutePlaceDto
+            {
+                PlaceId = rp.PlaceId,
+                Cost = rp.Place!.Cost,
+                PlaceName = rp.Place.Name,
+                PlacePosition = rp.PlacePosition,
+                Latitude = rp.Place!.Latitude,
+                Longitude = rp.Place!.Longitude
+            }).ToList()
+        };
+        return Ok(userRouteDto);
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateUserRoute([FromBody] UserRouteDto userRouteDto)
+    public async Task<IActionResult> CreateUserRoute([FromBody] UserRouteDtoReq userRouteDto)
     {
         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var userRoute = new UserRoute()
@@ -84,7 +97,7 @@ public class UserRoutesController(ApplicationDbContext context, ILogger<UserRout
     }
     
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateUserRoute([FromRoute] Guid id, [FromBody] UserRouteDto userRouteDto)
+    public async Task<IActionResult> UpdateUserRoute([FromRoute] Guid id, [FromBody] UserRouteDtoReq userRouteDto)
     {
         var existingUserRoute = await context.Routes.SingleOrDefaultAsync(r => r.Id == id);
         if (existingUserRoute == null)
